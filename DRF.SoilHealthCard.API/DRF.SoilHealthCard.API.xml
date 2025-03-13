@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DRF.SoilHealthCard.API</name>
+    </assembly>
+    <members>
+        <member name="T:JwtAuthExample.Controllers.AuthController">
+            <summary>
+            AuthController
+            </summary>
+            <param name="userService"></param>
+        </member>
+        <member name="M:JwtAuthExample.Controllers.AuthController.#ctor(DRF.SoilHealthCard.API.Services.Interface.IUserService)">
+            <summary>
+            AuthController
+            </summary>
+            <param name="userService"></param>
+        </member>
+        <member name="M:JwtAuthExample.Controllers.AuthController.Login(JwtAuthExample.Controllers.LoginRequest)">
+            <summary>
+            Login
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="T:JwtAuthExample.Controllers.LoginRequest">
+            <summary>
+            Login Request
+            </summary>
+        </member>
+        <member name="P:JwtAuthExample.Controllers.LoginRequest.Username">
+            <summary>
+            Username
+            </summary>
+        </member>
+        <member name="P:JwtAuthExample.Controllers.LoginRequest.Password">
+            <summary>
+            Password
+            </summary>
+        </member>
+    </members>
+</doc>
