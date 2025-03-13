@@ -2,6 +2,8 @@
 using DRF.SoilHealthCard.API.DTO;
 using DRF.SoilHealthCard.API.Model;
 using DRF.SoilHealthCard.API.Services.Interface;
+using DRF.SoilHealthCard.API.Utils.Model;
+using DRF.SoilHealthCard.API.Utils.Service;
 using DRF.SoilHealthCard.API.ViewModel;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +11,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Text;
+using BCryptNet = BCrypt.Net.BCrypt;
 
 namespace DRF.SoilHealthCard.API.Services.Implementation
 {
@@ -19,60 +23,68 @@ namespace DRF.SoilHealthCard.API.Services.Implementation
         private readonly JwtSettings _jwtSettings;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ILogger<UserService> _logger;
+        private readonly IJwtUtils _jwtUtils;
+        private readonly AppSettings _appSettings;
 
         public UserService(AppDbContext context, IOptions<JwtSettings> jwtSettings, 
             IPasswordHasher<User> passwordHasher,
-            ILogger<UserService> logger)
+            ILogger<UserService> logger,
+           IJwtUtils jwtUtils,
+       IOptions<AppSettings> appSettings)
         {
             _context = context;
             _jwtSettings = jwtSettings.Value;  // Accessing the SecretKey from appsettings.json
             _passwordHasher = passwordHasher;
             _logger = logger;
+            _jwtUtils = jwtUtils;
+            _appSettings = appSettings.Value;
         }
 
-        public string Authenticate(string username, string password)
+        public AuthenticateResponse Authenticate(string username, string password,string ipAddress)
         {
-            var user = _context.Users.SingleOrDefault(x => x.UserName == username);
+            var user = _context.Users.FirstOrDefault(x=>x.UserName== username);
 
-            if (user == null || !VerifyPassword(password, user.PasswordHash))
+            if (user == null || !BCryptNet.Verify(password, user.PasswordHash))
             {
-                return null; // Authentication failed
+
             }
 
-            // Create JWT Token
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);  // Using the SecretKey from appsettings.json
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new System.Security.Claims.ClaimsIdentity(new[]
-                {
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.UserName),
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, user.RoleName)
-                }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+             string jwtToken = _jwtUtils.GenerateJwtToken(user);
+             var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
+
+            return new AuthenticateResponse(user, jwtToken, refreshToken.Token, DefalutUrl());
         }
 
-        public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto model)
+        public async Task<RegisterResponse> RegisterAsync(RegisterRequestDto model)
         {
-            if (await UserExistsAsync(model.Username))
-                return new RegisterResponseDto { Success = false, Message = "User already exists" };
+            User user = new();
+            RegisterResponse response = new();
 
-            var user = new User
-            {
-                UserName = model.Username,
-                Email = model.Email
-            };
+            // map model to new account object
+            user.Email = model.Email;
+            user.Name = "Admin";
+            user.UserName = model.Email;
+            user.Role = 1;
+            user.RoleName = "Admin";
+            user.EmailConfirmed = true;
 
-            user.PasswordHash = _passwordHasher.HashPassword(user, model.Password);
-
+            // hash password
+            user.PasswordHash = BCryptNet.HashPassword(model.Password);
+            user.IsActive = true;
+            user.PhoneNumber = "";
+            user.PhoneNumberConfirmed = true;
+            user.NormalizedEmail = model.Email;
+            user.EmailConfirmed = true;
+            user.LastLoginDate = DateTime.Now;
+            user.SecurityStamp = Guid.NewGuid().ToString();
+            user.AccessFailedCount = 0;
+            user.NormalizedUserName = model.Email;
+            user.LockoutEnd = DateTime.Now;
+            user.ConcurrencyStamp = Guid.NewGuid().ToString();
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return new RegisterResponseDto { Success = true, Message = "User registered successfully" };
+            _context.SaveChanges();
+            return response;
+            
         }
 
         private async Task<bool> UserExistsAsync(string username)
@@ -92,6 +104,12 @@ namespace DRF.SoilHealthCard.API.Services.Implementation
         {
             byte[] hash = KeyDerivation.Pbkdf2(password, salt, KeyDerivationPrf.HMACSHA256, 10000, 256 / 8);
             return Convert.ToBase64String(hash);
+        }
+
+        private string DefalutUrl()
+        {
+            string DefalutUrl = "/List";
+            return DefalutUrl;
         }
     }
 }

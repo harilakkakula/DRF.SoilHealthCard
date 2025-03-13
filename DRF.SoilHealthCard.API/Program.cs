@@ -7,6 +7,12 @@ using DRF.SoilHealthCard.API.DBContext;
 using DRF.SoilHealthCard.API.Services.Implementation;
 using DRF.SoilHealthCard.API.Services.Interface;
 using DRF.SoilHealthCard.API.ViewModel;
+using Microsoft.AspNetCore.Identity;
+using DRF.SoilHealthCard.API.Model;
+using DRF.SoilHealthCard.API.Utils.Service;
+using DRF.SoilHealthCard.API.Utils.Implementation;
+using DRF.SoilHealthCard.API.Utils.Model;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +20,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+
+// Register IPasswordHasher to DI container
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
+
 // Configure JWT settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
+builder.Services.AddScoped<IJwtUtils, JwtUtils>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Add authentication services

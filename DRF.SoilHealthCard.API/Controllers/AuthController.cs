@@ -1,5 +1,11 @@
-﻿using DRF.SoilHealthCard.API.Services.Interface;
+﻿using DRF.SoilHealthCard.API.DTO;
+using DRF.SoilHealthCard.API.Model;
+using DRF.SoilHealthCard.API.Services.Interface;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace JwtAuthExample.Controllers
 {
@@ -9,9 +15,15 @@ namespace JwtAuthExample.Controllers
     /// <param name="userService"></param>
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IUserService userService) : ControllerBase
+    public class AuthController: ControllerBase
     {
-        private readonly IUserService _userService = userService;
+        private readonly IUserService _userService;
+        public AuthController(
+                              IUserService userService
+                             )
+        {
+            _userService = userService;
+        }
 
         /// <summary>
         /// Login
@@ -19,15 +31,25 @@ namespace JwtAuthExample.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest model)
+        public async Task<IActionResult> LoginAsync([FromBody] LoginRequest model)
         {
-            var token = _userService.Authenticate(model.Username, model.Password);
+            if (model == null)
+                return BadRequest("Invalid login data.");
 
-            if (token == null)
-                return Unauthorized(new { message = "Username or password is incorrect" });
+           var result=_userService.Authenticate(model.Username,model.Password,"00");
 
-            return Ok(new { Token = token });
+            return Ok(result);
         }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerDto)
+        {
+           
+            await _userService.RegisterAsync(registerDto);
+            return Ok(new { Message = "Registration successful." });
+        }
+
+      
     }
 
     /// <summary>
