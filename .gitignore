@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/DRF/DesignTimeBuild
+/.vs
+/DRF.SoilHealthCard.API/obj
+/DRF.SoilHealthCard.API/.vs/DRF.SoilHealthCard.API/v17
