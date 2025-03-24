@@ -9,3 +9,7 @@
 /DRF.SoilHealthCard.API/.vs/DRF.SoilHealthCard.API
 /DRF.SoilHealthCard.API/bin/Debug/net8.0
 /DRF.SoilHealthCard.API/.vs/ProjectEvaluation
+/DRF.SoilHealth.Report/obj
+/DRF.SoilHealthCard.Report/bin
+/DRF.SoilHealthCard.Report/obj/Debug
+/DRF.SoilHealthCard.Report/SqlServerTypes
